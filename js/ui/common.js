@@ -6,7 +6,12 @@ import { COLORS } from '../model.js';
 
 export function useStore(subscribe, get) {
   const [value, setValue] = useState(get());
-  useEffect(() => subscribe(setValue), []);
+  useEffect(() => {
+    const unsubscribe = subscribe(setValue);
+    // Αν η κατάσταση άλλαξε πριν από την εγγραφή (π.χ. το OneDrive ξεκίνησε γρήγορα), την παίρνουμε τώρα.
+    setValue(get());
+    return unsubscribe;
+  }, []);
   return value;
 }
 
