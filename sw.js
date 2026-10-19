@@ -1,6 +1,6 @@
 // Service worker: κρατά όλα τα αρχεία της εφαρμογής στη συσκευή ώστε να ανοίγει χωρίς διαδίκτυο.
 // Σε κάθε νέα έκδοση αλλάζει το VERSION· η εφαρμογή προτείνει «Ανανέωση».
-const VERSION = 'atzenta-v1.0.3';
+const VERSION = 'atzenta-v1.0.4';
 
 const FILES = [
   './',
@@ -31,7 +31,11 @@ const FILES = [
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(VERSION).then((cache) => cache.addAll(FILES)));
+  // cache: 'reload' — τα αρχεία έρχονται από τον διακομιστή, όχι από την προσωρινή μνήμη του browser
+  // (αλλιώς μια νέα έκδοση θα μπορούσε να αποθηκεύσει παλιά αρχεία).
+  event.waitUntil(
+    caches.open(VERSION).then((cache) => cache.addAll(FILES.map((f) => new Request(f, { cache: 'reload' })))),
+  );
 });
 
 self.addEventListener('activate', (event) => {
