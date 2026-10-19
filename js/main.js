@@ -53,12 +53,18 @@ function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
   navigator.serviceWorker.register('./sw.js').catch((e) => console.warn('Service worker:', e.message)).then((reg) => {
     if (!reg) return;
+    // Νέα έκδοση βρέθηκε στο άνοιγμα: εφαρμόζεται αμέσως (δεν έχετε αρχίσει ακόμη να γράφετε).
+    if (reg.waiting && navigator.serviceWorker.controller) {
+      reg.waiting.postMessage('skipWaiting');
+      return;
+    }
+    // Νέα έκδοση ενώ χρησιμοποιείτε την εφαρμογή: ρωτάμε, ώστε να μη χαθεί κάτι που γράφετε.
     const offerUpdate = (worker) =>
       toast('Υπάρχει νέα έκδοση της εφαρμογής.', {
         action: 'Ανανέωση',
+        persistent: true,
         onAction: () => worker.postMessage('skipWaiting'),
       });
-    if (reg.waiting && navigator.serviceWorker.controller) offerUpdate(reg.waiting);
     reg.addEventListener('updatefound', () => {
       const worker = reg.installing;
       worker?.addEventListener('statechange', () => {
@@ -66,9 +72,11 @@ function registerServiceWorker() {
       });
     });
   });
+  // Επαναφόρτωση μόνο όταν αντικαθίσταται παλιά έκδοση (όχι στην πρώτη εγκατάσταση).
+  const hadController = Boolean(navigator.serviceWorker.controller);
   let reloading = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!reloading) {
+    if (hadController && !reloading) {
       reloading = true;
       location.reload();
     }

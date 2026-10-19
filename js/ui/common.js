@@ -123,20 +123,31 @@ export function Menu({ label = 'Επιλογές', items }) {
 }
 
 // ---- Toast ----
-let showToastFn = () => {};
+let showToastFn = null;
+let pendingToast = null;
 
-/** toast('Κείμενο', { action: 'Αναίρεση', onAction }) */
+/**
+ * toast('Κείμενο', { action: 'Αναίρεση', onAction, persistent })
+ * Αν η οθόνη δεν είναι ακόμη έτοιμη, το μήνυμα κρατιέται και εμφανίζεται μόλις γίνει.
+ */
 export function toast(text, options = {}) {
-  showToastFn({ text, ...options, key: Date.now() });
+  const t = { text, ...options, key: Date.now() };
+  if (showToastFn) showToastFn(t);
+  else pendingToast = t;
 }
 
 export function ToastHost() {
   const [t, setT] = useState(null);
   useEffect(() => {
     showToastFn = setT;
+    if (pendingToast) {
+      setT(pendingToast);
+      pendingToast = null;
+    }
+    return () => { showToastFn = null; };
   }, []);
   useEffect(() => {
-    if (!t) return;
+    if (!t || t.persistent) return;
     const id = setTimeout(() => setT(null), t.action ? 8000 : 3500);
     return () => clearTimeout(id);
   }, [t]);
