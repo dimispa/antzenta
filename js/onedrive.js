@@ -7,6 +7,8 @@ const DATA_FILE = 'atzenta-data.json';
 
 let pca = null;
 let account = null;
+/** Το id του φακέλου της εφαρμογής στο OneDrive (βλ. dataPath). */
+let appFolderId = null;
 const listeners = new Set();
 
 export class NotSignedInError extends Error {
@@ -22,9 +24,19 @@ export class LoginRequiredError extends Error {
 }
 
 export class GraphError extends Error {
-  constructor(status, body) {
-    super(`OneDrive: σφάλμα ${status}`);
+  constructor(status, body, action = '') {
+    let code = '';
+    let detail = '';
+    try {
+      const err = JSON.parse(body).error;
+      code = err?.code ?? '';
+      detail = err?.message ?? '';
+    } catch {
+      /* όχι JSON */
+    }
+    super(`OneDrive${action ? ` (${action})` : ''}: σφάλμα ${status}${code ? ` ${code}` : ''}${detail ? ` — ${detail}` : ''}`);
     this.status = status;
+    this.code = code;
     this.body = body;
   }
 }
@@ -48,6 +60,7 @@ export function getStatus() {
 
 function setAccount(a) {
   account = a ?? null;
+  appFolderId = null;
   status = { configured: pca !== null, account };
   for (const fn of listeners) fn(status);
 }
@@ -120,7 +133,7 @@ async function graph(path, options = {}) {
     headers: { Authorization: `Bearer ${t}`, ...(options.headers ?? {}) },
   });
   if (!res.ok && !(options.accept ?? []).includes(res.status)) {
-    throw new GraphError(res.status, await res.text().catch(() => ''));
+    throw new GraphError(res.status, await res.text().catch(() => ''), options.action);
   }
   return res;
 }
@@ -139,7 +152,7 @@ export async function listChildren(folderId) {
   let url = `${base}/children?$select=${ITEM_FIELDS}&$top=200`;
   const items = [];
   while (url) {
-    const page = await graphJson(url);
+    const page = await graphJson(url, { action: 'λίστα αρχείων' });
     items.push(...page.value);
     url = page['@odata.nextLink'] ?? null;
   }
@@ -184,16 +197,26 @@ export async function profile() {
 }
 
 // ---- Αρχείο δεδομένων συγχρονισμού (στον ειδικό φάκελο της εφαρμογής στο OneDrive) ----
+// Ο φάκελος είναι «OneDrive/Εφαρμογές/Ατζέντα Εκπαιδευτικού». Τον ζητάμε πρώτα ρητά, γιατί σε νέο
+// λογαριασμό δεν υπάρχει ακόμη και το OneDrive τον δημιουργεί μόνο έτσι — αλλιώς η εγγραφή αρχείου
+// μέσα του αποτυγχάνει με 404.
 
-const DATA_PATH = `/me/drive/special/approot:/${DATA_FILE}:`;
+
+async function dataPath() {
+  if (!appFolderId) {
+    appFolderId = (await graphJson('/me/drive/special/approot?$select=id', { action: 'φάκελος εφαρμογής' })).id;
+  }
+  return `/me/drive/items/${encodeURIComponent(appFolderId)}:/${DATA_FILE}:`;
+}
 
 /** { data, etag } ή null αν δεν υπάρχει ακόμη αρχείο. */
 export async function readDataFile() {
-  const res = await graph(`${DATA_PATH}?$select=id,eTag,@microsoft.graph.downloadUrl`, { accept: [404] });
+  const path = await dataPath();
+  const res = await graph(`${path}?$select=id,eTag,@microsoft.graph.downloadUrl`, { accept: [404], action: 'ανάγνωση δεδομένων' });
   if (res.status === 404) return null;
   const meta = await res.json();
   const content = await fetch(meta['@microsoft.graph.downloadUrl'], { cache: 'no-store' });
-  if (!content.ok) throw new GraphError(content.status, '');
+  if (!content.ok) throw new GraphError(content.status, '', 'λήψη δεδομένων');
   return { data: await content.json(), etag: meta.eTag };
 }
 
@@ -203,12 +226,14 @@ export async function readDataFile() {
  * Επιστρέφει { ok, etag } ή { conflict: true }.
  */
 export async function writeDataFile(data, etag) {
-  const url = etag ? `${DATA_PATH}/content` : `${DATA_PATH}/content?@microsoft.graph.conflictBehavior=fail`;
+  const path = await dataPath();
+  const url = etag ? `${path}/content` : `${path}/content?@microsoft.graph.conflictBehavior=fail`;
   const res = await graph(url, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...(etag ? { 'If-Match': etag } : {}) },
     body: JSON.stringify(data),
     accept: [409, 412],
+    action: 'αποθήκευση δεδομένων',
   });
   if (res.status === 409 || res.status === 412) return { conflict: true };
   return { ok: true, etag: (await res.json()).eTag };
