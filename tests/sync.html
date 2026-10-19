@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8" />
+  <title>Tests συγχρονισμού — Ατζέντα</title>
+  <!-- Ο συγχρονισμός και το store τρέχουν όπως είναι, αλλά με ψεύτικο OneDrive και αποθήκευση στη μνήμη. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "http://localhost:8765/js/onedrive.js": "/tests/mock-onedrive.js",
+        "http://localhost:8765/js/db.js": "/tests/mock-db.js"
+      }
+    }
+  </script>
+  <style>
+    body { font: 15px/1.5 system-ui, sans-serif; margin: 24px; }
+    .pass { color: #2e7d32; } .fail { color: #c62828; font-weight: 700; }
+    #summary { font-size: 1.2rem; font-weight: 700; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <div id="summary">Εκτέλεση…</div>
+  <ol id="results"></ol>
+  <script type="module" src="./sync.test.js"></script>
+</body>
+</html>
