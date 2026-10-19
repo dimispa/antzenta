@@ -179,11 +179,22 @@ function simplify(it) {
 
 /** Κατεβάζει το περιεχόμενο ενός αρχείου (για προβολή ή αποθήκευση εκτός σύνδεσης). */
 export async function download(itemId) {
-  // Το /content κάνει ανακατεύθυνση που μπλοκάρεται από CORS· η downloadUrl είναι ήδη εξουσιοδοτημένη.
-  const meta = await graphJson(`/me/drive/items/${encodeURIComponent(itemId)}?$select=id,@microsoft.graph.downloadUrl`);
-  const res = await fetch(meta['@microsoft.graph.downloadUrl']);
-  if (!res.ok) throw new GraphError(res.status, '');
-  return res.blob();
+  const path = `/me/drive/items/${encodeURIComponent(itemId)}`;
+  const meta = await graphJson(path, { action: 'στοιχεία αρχείου' });
+  return (await fetchContent(path, meta, 'λήψη αρχείου')).blob();
+}
+
+/**
+ * Κατεβάζει το περιεχόμενο ενός αρχείου. Προτιμάται η «@microsoft.graph.downloadUrl» (ήδη
+ * εξουσιοδοτημένη, χωρίς προβλήματα CORS). ΠΡΟΣΟΧΗ: στους προσωπικούς λογαριασμούς δεν
+ * επιστρέφεται όταν το αίτημα έχει $select — γι' αυτό τα στοιχεία ζητούνται χωρίς $select.
+ * Αν λείπει παρ' όλα αυτά, κατεβαίνει από το /content του Graph.
+ */
+async function fetchContent(itemPath, meta, action, init = {}) {
+  const url = meta['@microsoft.graph.downloadUrl'];
+  const res = url ? await fetch(url, init) : await graph(`${itemPath}/content`, { ...init, action });
+  if (!res.ok) throw new GraphError(res.status, await res.text().catch(() => ''), action);
+  return res;
 }
 
 /** Διεύθυνση προεπισκόπησης για έγγραφα Office (Word, PowerPoint, Excel) — μόνο με σύνδεση. */
@@ -212,11 +223,10 @@ async function dataPath() {
 /** { data, etag } ή null αν δεν υπάρχει ακόμη αρχείο. */
 export async function readDataFile() {
   const path = await dataPath();
-  const res = await graph(`${path}?$select=id,eTag,@microsoft.graph.downloadUrl`, { accept: [404], action: 'ανάγνωση δεδομένων' });
+  const res = await graph(path, { accept: [404], action: 'ανάγνωση δεδομένων' });
   if (res.status === 404) return null;
   const meta = await res.json();
-  const content = await fetch(meta['@microsoft.graph.downloadUrl'], { cache: 'no-store' });
-  if (!content.ok) throw new GraphError(content.status, '', 'λήψη δεδομένων');
+  const content = await fetchContent(path, meta, 'λήψη δεδομένων', { cache: 'no-store' });
   return { data: await content.json(), etag: meta.eTag };
 }
 
