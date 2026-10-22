@@ -8,6 +8,7 @@ import { COLLECTIONS, alive, emptyData, mergeData } from '../model.js';
 import { Icon } from './icons.js';
 import { toast, useStore } from './common.js';
 import { back } from '../router.js';
+import { StudentsPanel } from './StudentsUI.js';
 
 const CLIENT_ID_KEY = 'atzenta.clientId';
 
@@ -24,6 +25,7 @@ export function SettingsView({ data }) {
     </header>
     <main class="page">
       <${OneDrivePanel} />
+      <${StudentsPanel} data=${data} />
       <${BackupPanel} data=${data} />
       <${InstallPanel} />
       <p class="muted" style="text-align:center;font-size:.85rem">Ατζέντα Εκπαιδευτικού · έκδοση ${APP_VERSION}</p>

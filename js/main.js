@@ -18,7 +18,7 @@ function App() {
   useEffect(() => window.scrollTo(0, 0), [route.name, route.teachingId]);
 
   let view;
-  if (route.name === 'lesson') view = html`<${LessonView} data=${data} teachingId=${route.teachingId} />`;
+  if (route.name === 'lesson') view = html`<${LessonView} data=${data} teachingId=${route.teachingId} tab=${route.tab} />`;
   else if (route.name === 'settings') view = html`<${SettingsView} data=${data} />`;
   else view = html`<${HomeView} data=${data} classId=${route.classId} />`;
 

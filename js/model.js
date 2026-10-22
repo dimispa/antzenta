@@ -4,8 +4,9 @@
 //   classes   { id, name, order }
 //   teachings { id, classId, subject, color, order, plan, folder }   ένα μάθημα σε ένα τμήμα
 //   entries   { id, teachingId, date, status, planned, actual, reason, note, createdAt }
+// Βαθμολόγιο (βλ. grading.js): students, assessments, marks, scores, settings.
 
-export const COLLECTIONS = ['classes', 'teachings', 'entries'];
+export const COLLECTIONS = ['classes', 'teachings', 'entries', 'students', 'assessments', 'marks', 'scores', 'settings'];
 
 export const STATUS = { DONE: 'done', NOT_HELD: 'not_held' };
 
@@ -113,7 +114,9 @@ export function skipLesson(teaching, { date, reason, note }, now = Date.now()) {
 // Οι διαγραφές είναι «ταφόπλακες» (deleted: true), ώστε να μη «ξαναζωντανεύουν» από άλλη συσκευή.
 
 export function emptyData() {
-  return { version: 1, classes: [], teachings: [], entries: [] };
+  const data = { version: 1 };
+  for (const c of COLLECTIONS) data[c] = [];
+  return data;
 }
 
 export function mergeCollection(a = [], b = []) {

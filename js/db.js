@@ -7,7 +7,7 @@
 import { COLLECTIONS } from './model.js';
 
 const DB_NAME = 'atzenta';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // 2: βαθμολόγιο (students, assessments, marks, scores, settings)
 let dbPromise = null;
 
 function open() {

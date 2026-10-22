@@ -9,9 +9,10 @@ import { REASONS, STATUS, entriesOf, formatDate, lastDone, reasonLabel, relative
 import { Icon } from './icons.js';
 import { ConfirmDialog, Dialog, Menu, SyncBadge, TeachingDialog, toast } from './common.js';
 import { MaterialDrawer } from './MaterialDrawer.js';
+import { GradebookView } from './GradebookView.js';
 import { back, navigate } from '../router.js';
 
-export function LessonView({ data, teachingId }) {
+export function LessonView({ data, teachingId, tab = 'lesson' }) {
   const t = data.teachings.find((x) => x.id === teachingId && !x.deleted);
   const cls = t && data.classes.find((c) => c.id === t.classId);
   const [dialog, setDialog] = useState(null);
@@ -48,12 +49,21 @@ export function LessonView({ data, teachingId }) {
             onConfirm=${() => { store.deleteTeaching(t.id); navigate(`/c/${t.classId}`, { replace: true }); }} onClose=${close} />`) },
       ]} />
     </header>
+    <nav class="tabs" aria-label="Προβολή">
+      <button class=${tab === 'lesson' ? 'on' : ''} aria-current=${tab === 'lesson' ? 'page' : undefined}
+        onClick=${() => navigate(`/t/${t.id}`, { replace: true })}>Μάθημα</button>
+      <button class=${tab === 'grades' ? 'on' : ''} aria-current=${tab === 'grades' ? 'page' : undefined}
+        onClick=${() => navigate(`/t/${t.id}/grades`, { replace: true })}>Βαθμολόγιο</button>
+    </nav>
     <main class="lesson">
-      <div class="columns">
-        <${PreviousColumn} entries=${entries} last=${lastDone(data.entries, t.id)} setDialog=${setDialog} />
-        <${PlanColumn} key=${`plan-${t.id}`} t=${t} entries=${entries} />
-        <${ActualColumn} key=${`actual-${t.id}`} t=${t} />
-      </div>
+      ${tab === 'grades'
+        ? html`<${GradebookView} data=${data} t=${t} cls=${cls} />`
+        : html`
+          <div class="columns">
+            <${PreviousColumn} entries=${entries} last=${lastDone(data.entries, t.id)} setDialog=${setDialog} />
+            <${PlanColumn} key=${`plan-${t.id}`} t=${t} entries=${entries} />
+            <${ActualColumn} key=${`actual-${t.id}`} t=${t} />
+          </div>`}
       ${drawer && html`<${MaterialDrawer} t=${t} onClose=${() => setDrawer(false)} />`}
     </main>
     ${dialog}`;

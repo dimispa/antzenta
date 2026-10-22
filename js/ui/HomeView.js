@@ -5,6 +5,8 @@ import { COLORS, alive, formatDate, lastDone, relativeDays, teachingsOf } from '
 import { Icon } from './icons.js';
 import { ConfirmDialog, Menu, SyncBadge, TeachingDialog, TextDialog } from './common.js';
 import { navigate } from '../router.js';
+import { StudentsDialog } from './StudentsUI.js';
+import { studentsOf } from '../grading.js';
 
 export function HomeView({ data, classId }) {
   const classes = alive(data.classes).sort((a, b) => a.order - b.order);
@@ -59,6 +61,8 @@ function ClassSubjects({ data, cls, classes, setDialog }) {
         <${Menu} label="Επιλογές τμήματος" items=${[
           { label: 'Μετονομασία', icon: 'edit', onClick: () => setDialog(html`<${TextDialog} title="Μετονομασία τμήματος"
               label="Όνομα τμήματος" initial=${cls.name} onSave=${(name) => store.renameClass(cls.id, name)} onClose=${close} />`) },
+          { label: `Μαθητές (${studentsOf(data, cls.id).length})`, icon: 'school', onClick: () => setDialog(html`<${StudentsDialog}
+              cls=${cls} onClose=${close} />`) },
           { label: 'Μετακίνηση πάνω', icon: 'up', disabled: index === 0, onClick: () => store.moveClass(cls.id, -1) },
           { label: 'Μετακίνηση κάτω', icon: 'down', disabled: index === classes.length - 1, onClick: () => store.moveClass(cls.id, 1) },
           { label: 'Διαγραφή', icon: 'trash', danger: true, onClick: () => setDialog(html`<${ConfirmDialog} title="Διαγραφή τμήματος"

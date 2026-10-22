@@ -1,1 +1,5 @@
 tools/__pycache__/
+# Ποτέ πραγματικά αρχεία μαθητών στο αποθετήριο (είναι δημόσιο)
+*.xlsx
+!tests/fixtures/myschool-sample.xlsx
+!tests/fixtures/myschool-sample-myschoolstyle.xlsx
