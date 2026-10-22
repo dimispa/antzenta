@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ατζέντα Εκπαιδευτικού — νέα διεύθυνση</title>
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  :root { color-scheme: light dark; --bg:#f4f5f8; --card:#fff; --fg:#1b1f2a; --muted:#5b6475; --accent:#4f5bd5; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#14161c; --card:#1e2129; --fg:#e8eaf0; --muted:#a3abbb; --accent:#8b94ff; } }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width:520px; margin:32px auto; padding:24px 20px; background:var(--card); border-radius:16px; box-shadow:0 2px 12px #0002; }
+  @media (max-width:560px) { main { margin:16px; } }
+  img { display:block; margin:0 auto 8px; width:64px; height:64px; border-radius:14px; }
+  h1 { text-align:center; font-size:1.3rem; margin:0 0 12px; }
+  ol { padding-left:1.3em; } li { margin:6px 0; }
+  .btn { display:block; width:100%; box-sizing:border-box; text-align:center; padding:12px; margin:10px 0; border-radius:10px;
+         border:1px solid var(--accent); background:transparent; color:var(--accent); font:inherit; font-weight:600; text-decoration:none; cursor:pointer; }
+  .btn.primary { background:var(--accent); color:#fff; }
+  .muted { color:var(--muted); font-size:.9rem; }
+  #msg { min-height:1.5em; text-align:center; }
+</style>
+</head>
+<body>
+<main>
+  <img src="icon-192.png" alt="">
+  <h1>Η Ατζέντα Εκπαιδευτικού μεταφέρθηκε</h1>
+  <p>Η εφαρμογή συνεχίζει στη νέα διεύθυνση:</p>
+  <a class="btn primary" href="https://atzenta.atzenta.workers.dev/">atzenta.atzenta.workers.dev</a>
+  <p><b>Μεταφορά των δεδομένων σας</b> (αν τα είχατε σε αυτή τη συσκευή):</p>
+  <ol>
+    <li>Πατήστε «Εξαγωγή δεδομένων» εδώ — θα αποθηκευτεί ένα αρχείο <code>.json</code>.</li>
+    <li>Ανοίξτε τη νέα διεύθυνση και ενεργοποιήστε την πρόσβασή σας.</li>
+    <li>Ρυθμίσεις → <b>Εισαγωγή αρχείου</b> → επιλέξτε το αρχείο.</li>
+  </ol>
+  <button class="btn" id="export">Εξαγωγή δεδομένων</button>
+  <p id="msg" class="muted"></p>
+  <p class="muted">Αν χρησιμοποιούσατε συγχρονισμό με OneDrive, αρκεί να συνδεθείτε ξανά στη νέα εφαρμογή. Αν την είχατε εγκαταστήσει στην αρχική οθόνη, αφαιρέστε το παλιό εικονίδιο και εγκαταστήστε τη νέα.</p>
+  <p class="muted" style="text-align:center">© 2026 Δρ. Παντελάκης Δ. — Σχεδιασμός Εφαρμογής: Δρ. Παντελάκης Δ., ΠΕ 88.01 – Γεωπόνων</p>
+</main>
+<script>
+  // Οι παλιές εκδόσεις είχαν service worker με αποθηκευμένα αρχεία: τα καθαρίζουμε.
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
+
+  const COLLECTIONS = ['classes', 'teachings', 'entries', 'students', 'assessments', 'marks', 'scores', 'settings'];
+  const msg = document.getElementById('msg');
+  const req = (r) => new Promise((ok, fail) => { r.onsuccess = () => ok(r.result); r.onerror = () => fail(r.error); });
+
+  document.getElementById('export').onclick = async () => {
+    try {
+      const db = await req(indexedDB.open('atzenta'));
+      const names = COLLECTIONS.filter((c) => db.objectStoreNames.contains(c));
+      const out = { version: 1 };
+      for (const c of COLLECTIONS) out[c] = [];
+      if (names.length) {
+        const tx = db.transaction(names, 'readonly');
+        for (const c of names) out[c] = await req(tx.objectStore(c).getAll());
+      }
+      const count = out.classes.filter((r) => !r.deleted).length + out.entries.filter((r) => !r.deleted).length;
+      if (!count) { msg.textContent = 'Δεν βρέθηκαν δεδομένα σε αυτή τη συσκευή.'; return; }
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' }));
+      a.download = `atzenta-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      msg.textContent = `Έτοιμο: ${out.classes.filter((r) => !r.deleted).length} τμήματα, ${out.entries.filter((r) => !r.deleted).length} καταχωρίσεις, ${out.students.filter((r) => !r.deleted).length} μαθητές.`;
+    } catch (e) {
+      msg.textContent = 'Η εξαγωγή απέτυχε: ' + e.message;
+    }
+  };
+</script>
+</body>
+</html>
