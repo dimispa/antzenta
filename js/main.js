@@ -9,17 +9,19 @@ import { ToastHost, toast } from './ui/common.js';
 import { HomeView } from './ui/HomeView.js';
 import { LessonView } from './ui/LessonView.js';
 import { SettingsView, clientId } from './ui/SettingsView.js';
+import { StudentView } from './ui/StudentView.js';
 
 function App() {
   const [data, setData] = useState(store.getData());
   const [route, setRoute] = useState(currentRoute());
   useEffect(() => store.subscribe(setData), []);
   useEffect(() => onRouteChange(setRoute), []);
-  useEffect(() => window.scrollTo(0, 0), [route.name, route.teachingId]);
+  useEffect(() => window.scrollTo(0, 0), [route.name, route.teachingId, route.studentId]);
 
   let view;
   if (route.name === 'lesson') view = html`<${LessonView} data=${data} teachingId=${route.teachingId} tab=${route.tab} />`;
   else if (route.name === 'settings') view = html`<${SettingsView} data=${data} />`;
+  else if (route.name === 'student') view = html`<${StudentView} data=${data} studentId=${route.studentId} />`;
   else view = html`<${HomeView} data=${data} classId=${route.classId} />`;
 
   return html`${view}<${ToastHost} />`;

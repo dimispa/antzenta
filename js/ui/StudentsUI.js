@@ -7,6 +7,7 @@ import { alive } from '../model.js';
 import { studentsOf } from '../grading.js';
 import { Icon } from './icons.js';
 import { ConfirmDialog, Dialog, toast, useStore } from './common.js';
+import { navigate } from '../router.js';
 
 const sameName = (a, b) => a.replace(/\s+/g, '').toLocaleUpperCase('el') === b.replace(/\s+/g, '').toLocaleUpperCase('el');
 
@@ -140,7 +141,8 @@ export function StudentsDialog({ cls, onClose }) {
             </li>`
           : html`
             <li key=${s.id}>
-              <span class="who"><span class="muted">${s.order ?? ''}</span> ${s.surname} ${s.name}
+              <span class="who"><span class="muted">${s.order ?? ''}</span>
+                <button class="link-btn" title="Καρτέλα μαθητή" onClick=${() => { onClose(); navigate(`/s/${s.id}`); }}>${s.surname} ${s.name}</button>
                 ${s.father && html`<small class="muted"> του ${s.father}</small>`}</span>
               <button class="icon-btn" aria-label=${`Διόρθωση ${s.surname}`} onClick=${() => setEditing({ ...s })}><${Icon} name="edit" /></button>
               <button class="icon-btn" aria-label=${`Διαγραφή ${s.surname}`} onClick=${() => setDeleting(s)}><${Icon} name="trash" /></button>

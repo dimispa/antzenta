@@ -356,3 +356,26 @@ input.grade-input.invalid { border-color: var(--skip); outline: 2px solid var(--
   .gb-toolbar .btn.small { padding: 0 10px; }
   .dialog { padding: 16px; }
 }
+
+/* ---- Αναλυτική προβολή βαθμολογίου ---- */
+.segmented.small button { padding: 6px 10px; font-size: .85rem; }
+table.grades th.group, table.grades td.group { border-left: 2px solid var(--border); }
+table.grades th.avg, table.grades td.avg { background: var(--surface-2); font-weight: 600; }
+table.grades.detail th .link-btn { color: var(--primary); font-weight: 700; }
+.cell-mark { display: inline-flex; align-items: center; gap: 3px; }
+.status-dot { width: 24px; height: 24px; flex: none; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); font-size: .75rem; font-weight: 700; color: var(--muted); padding: 0; }
+.status-dot.ontime { background: var(--done); border-color: var(--done); color: #fff; }
+.status-dot.late { background: var(--plan); border-color: var(--plan); color: #fff; }
+.status-dot.missing { background: var(--skip); border-color: var(--skip); color: #fff; }
+
+/* ---- Καρτέλα μαθητή ---- */
+.page.wide { width: min(900px, 100%); }
+.subject-summary { border-left: 5px solid var(--accent); }
+.subject-summary details summary { cursor: pointer; padding: 6px 0; }
+.subject-summary details[open] { display: flex; flex-direction: column; gap: 10px; }
+.grade-boxes { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+.grade-boxes div { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px; border-radius: 12px; background: var(--surface-2); }
+.grade-boxes span { font-size: .8rem; color: var(--muted); }
+.grade-boxes b { font-size: 1.4rem; }
+.grade-boxes .final { background: var(--primary-soft); color: var(--primary); }
+.kind-title { margin: 4px 0 0; font-size: .95rem; }

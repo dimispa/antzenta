@@ -1,6 +1,6 @@
 // Service worker: κρατά όλα τα αρχεία της εφαρμογής στη συσκευή ώστε να ανοίγει χωρίς διαδίκτυο.
 // Σε κάθε νέα έκδοση αλλάζει το VERSION· η εφαρμογή προτείνει «Ανανέωση».
-const VERSION = 'atzenta-v1.0.7';
+const VERSION = 'atzenta-v1.0.8';
 
 const FILES = [
   './',
@@ -31,6 +31,7 @@ const FILES = [
   './js/ui/SettingsView.js',
   './js/ui/GradebookView.js',
   './js/ui/StudentsUI.js',
+  './js/ui/StudentView.js',
   './js/vendor/preact-htm.js',
   './js/vendor/msal-browser.min.js',
 ];

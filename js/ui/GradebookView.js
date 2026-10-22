@@ -16,6 +16,22 @@ export function GradebookView({ data, t, cls }) {
   const [view, setView] = useState(() => String(termOf(today(), term1End)));
   const [dialog, setDialog] = useState(null);
   const close = () => setDialog(null);
+  // Σύνοψη (5 κριτήρια) ή αναλυτικά (κάθε αξιολόγηση σε στήλη)· η επιλογή θυμάται ανά συσκευή.
+  const [detail, setDetailState] = useState(() => {
+    try {
+      return localStorage.getItem('atzenta.gbDetail') !== '0';
+    } catch {
+      return true;
+    }
+  });
+  const setDetail = (v) => {
+    setDetailState(v);
+    try {
+      localStorage.setItem('atzenta.gbDetail', v ? '1' : '0');
+    } catch {
+      /* χωρίς αποθήκευση προτίμησης */
+    }
+  };
 
   const students = studentsOf(data, cls.id);
   const index = useMemo(() => indexGrades(data), [data.marks, data.scores]);
@@ -60,6 +76,11 @@ export function GradebookView({ data, t, cls }) {
           ${[['1', 'Α΄ τετράμηνο'], ['2', 'Β΄ τετράμηνο'], ['annual', 'Ετήσιος']].map(([k, label]) => html`
             <button role="tab" aria-selected=${view === k} class=${view === k ? 'on' : ''} onClick=${() => setView(k)}>${label}</button>`)}
         </div>
+        ${term && html`
+          <div class="segmented small" role="group" aria-label="Προβολή">
+            <button class=${detail ? '' : 'on'} aria-pressed=${!detail} onClick=${() => setDetail(false)}>Σύνοψη</button>
+            <button class=${detail ? 'on' : ''} aria-pressed=${detail} onClick=${() => setDetail(true)}>Αναλυτικά</button>
+          </div>`}
         <span class="grow"></span>
         ${term && html`
           <button class="btn small" onClick=${() => newAssessment('homework')}><${Icon} name="add" /> Εργασία</button>
@@ -89,56 +110,122 @@ export function GradebookView({ data, t, cls }) {
 
       <div class="table-wrap">
         ${term
-          ? html`<${TermTable} t=${t} term=${term} students=${students} results=${results} setDialog=${setDialog} data=${data} />`
+          ? html`<${TermTable} t=${t} term=${term} students=${students} results=${results} assessments=${assessments}
+              index=${index} detail=${detail} openAssessment=${openAssessment} />`
           : html`<${AnnualTable} t=${t} students=${students} results=${results} />`}
       </div>
+      ${term && detail && assessments.length > 0 && html`
+        <p class="muted" style="font-size:.85rem;margin:0">
+          <b>Διόρθωση:</b> γράψτε τον νέο βαθμό στο κελί. <b>Διαγραφή βαθμού:</b> σβήστε το κελί.
+          Ε = εργασία, Τ = τεστ, Δ = διαγώνισμα — πατήστε τον τίτλο της στήλης για όλη την αξιολόγηση.
+          Στις εργασίες το ✓ / ⏱ / ✗ αλλάζει με πάτημα.
+        </p>`}
       ${t.examined && view === 'annual' && html`
         <p class="muted" style="font-size:.85rem">Εξεταζόμενο μάθημα: Ετήσιος = (Μ.Ο. τετραμήνων + γραπτές εξετάσεις) / 2.</p>`}
     </div>
     ${dialog}`;
 }
 
-function TermTable({ t, term, students, results, setDialog, data }) {
+/** Ποια στήλη αντιστοιχεί σε ποιο είδος αξιολόγησης (στην αναλυτική προβολή). */
+const KIND_OF = { homework: 'homework', tests: 'test', exams: 'exam' };
+const SHORT = { homework: 'Ε', test: 'Τ', exam: 'Δ' };
+const STATUS_ICON = { ontime: '✓', late: '⏱', missing: '✗' };
+/** Πάτημα στο εικονίδιο παράδοσης: χωρίς → εμπρόθεσμα → εκπρόθεσμα → δεν παραδόθηκε → χωρίς */
+const nextStatus = (status) => ({ ontime: 'late', late: 'missing', missing: null })[status] ?? (status ? null : 'ontime');
+
+function TermTable({ t, term, students, results, assessments, index, detail, openAssessment }) {
   const weights = t.weights ?? DEFAULT_WEIGHTS;
   const active = CRITERIA.filter((c) => (weights[c.key] ?? 0) > 0);
-  const avg = (fn) => {
-    const v = students.map(fn).filter((x) => typeof x === 'number');
+  // Στην αναλυτική προβολή οι αξιολογήσεις με χρονολογική σειρά (η πρώτη αριστερά).
+  const byKind = {};
+  for (const kind of Object.keys(KINDS)) {
+    byKind[kind] = assessments.filter((a) => a.kind === kind).sort((a, b) => a.date.localeCompare(b.date));
+  }
+  const avg = (values) => {
+    const v = values.filter((x) => typeof x === 'number');
     return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
   };
+  const markOf = (a, s) => index.marks.get(markId(a.id, s.id));
+  const termValues = (s) => results.get(s.id)[term].values;
+
+  // Οι στήλες: [{ key, header, title, group, avgCol, cell(s), foot }]
+  const columns = [];
+  for (const c of active) {
+    const kind = KIND_OF[c.key];
+    if (detail && kind) {
+      byKind[kind].forEach((a, i) => columns.push({
+        key: a.id,
+        group: i === 0,
+        header: html`<button class="link-btn" onClick=${() => openAssessment(a)}>${SHORT[kind]}${i + 1}</button>`,
+        title: `${KINDS[kind].label} ${i + 1} · ${formatDate(a.date)}${a.title ? ` · ${a.title}` : ''}`,
+        cell: (s) => {
+          const m = markOf(a, s);
+          return html`<span class="cell-mark">
+            ${kind === 'homework' && html`<button class=${`status-dot ${m?.status ?? 'none'}`} title="Παράδοση (πατήστε για αλλαγή)"
+              aria-label=${`Παράδοση: ${m?.status ? HOMEWORK_STATUS[m.status].label : 'χωρίς'}`}
+              onClick=${() => store.setMark(a.id, s.id, { status: nextStatus(m?.status) })}>${STATUS_ICON[m?.status] ?? '·'}</button>`}
+            <${GradeInput} value=${m?.grade ?? null} label=${`${KINDS[kind].label} ${i + 1} ${s.surname}`}
+              onCommit=${(v) => store.setMark(a.id, s.id, { grade: v })} />
+          </span>`;
+        },
+        foot: avg(students.map((s) => markOf(a, s)?.grade)),
+      }));
+      columns.push({
+        key: `avg-${c.key}`,
+        group: byKind[kind].length === 0,
+        avgCol: byKind[kind].length > 0,
+        header: byKind[kind].length ? `Μ.Ο. ${c.short}` : c.short,
+        title: `Μέσος όρος: ${c.label}`,
+        cell: (s) => formatGrade(termValues(s)[c.key]),
+        foot: avg(students.map((s) => termValues(s)[c.key])),
+      });
+      continue;
+    }
+    columns.push({
+      key: c.key,
+      group: detail,
+      header: c.short,
+      title: c.label,
+      cell: (s) => {
+        const r = results.get(s.id)[term];
+        if (c.key === 'participation') {
+          return html`<${GradeInput} value=${r.values.participation} label=${`Συμμετοχή ${s.surname}`}
+            onCommit=${(v) => store.setScore(t.id, s.id, `participation${term}`, v)} />`;
+        }
+        return html`${formatGrade(r.values[c.key])}${c.key === 'consistency' && r.homeworkCount
+          ? html`<small class="muted"> (${r.onTime}/${r.homeworkCount})</small>` : ''}`;
+      },
+      foot: avg(students.map((s) => termValues(s)[c.key])),
+    });
+  }
+  const cls = (col) => `${col.group ? 'group' : ''} ${col.avgCol ? 'avg' : ''}`;
+
   return html`
-    <table class="grades">
+    <table class=${`grades ${detail ? 'detail' : ''}`}>
       <thead>
         <tr>
           <th class="num">#</th>
           <th class="name">Μαθητής</th>
-          ${active.map((c) => html`<th title=${c.label}>${c.short}</th>`)}
+          ${columns.map((col) => html`<th key=${col.key} title=${col.title} class=${cls(col)}>${col.header}</th>`)}
           <th class="final">Βαθμός</th>
         </tr>
       </thead>
       <tbody>
-        ${students.map((s) => {
-          const r = results.get(s.id)[term];
-          return html`
-            <tr key=${s.id}>
-              <td class="num">${s.order ?? ''}</td>
-              <td class="name"><button class="link-btn" title=${`${s.surname} ${s.name}`} onClick=${() => setDialog(html`<${StudentDialog}
-                  t=${t} student=${s} term=${term} result=${r} onClose=${() => setDialog(null)} />`)}>
-                ${s.surname} ${s.name}</button></td>
-              ${active.map((c) => c.key === 'participation'
-                ? html`<td><${GradeInput} value=${r.values.participation} label=${`Συμμετοχή ${s.surname}`}
-                    onCommit=${(v) => store.setScore(t.id, s.id, `participation${term}`, v)} /></td>`
-                : html`<td>${formatGrade(r.values[c.key])}${c.key === 'consistency' && r.homeworkCount
-                    ? html`<small class="muted"> (${r.onTime}/${r.homeworkCount})</small>` : ''}</td>`)}
-              <td class="final"><b>${formatGrade(r.grade)}</b></td>
-            </tr>`;
-        })}
+        ${students.map((s) => html`
+          <tr key=${s.id}>
+            <td class="num">${s.order ?? ''}</td>
+            <td class="name"><button class="link-btn" title=${`Καρτέλα: ${s.surname} ${s.name}`}
+              onClick=${() => navigate(`/s/${s.id}`)}>${s.surname} ${s.name}</button></td>
+            ${columns.map((col) => html`<td key=${col.key} class=${cls(col)}>${col.cell(s)}</td>`)}
+            <td class="final"><b>${formatGrade(results.get(s.id)[term].grade)}</b></td>
+          </tr>`)}
       </tbody>
       <tfoot>
         <tr>
           <td></td>
           <td class="name">Μέσος όρος τμήματος</td>
-          ${active.map((c) => html`<td>${formatGrade(avg((s) => results.get(s.id)[term].values[c.key]))}</td>`)}
-          <td class="final">${formatGrade(avg((s) => results.get(s.id)[term].grade))}</td>
+          ${columns.map((col) => html`<td key=${col.key} class=${cls(col)}>${formatGrade(col.foot)}</td>`)}
+          <td class="final">${formatGrade(avg(students.map((s) => results.get(s.id)[term].grade)))}</td>
         </tr>
       </tfoot>
     </table>`;
@@ -160,7 +247,8 @@ function AnnualTable({ t, students, results }) {
           return html`
             <tr key=${s.id}>
               <td class="num">${s.order ?? ''}</td>
-              <td class="name" title=${`${s.surname} ${s.name}`}>${s.surname} ${s.name}</td>
+              <td class="name"><button class="link-btn" title=${`Καρτέλα: ${s.surname} ${s.name}`}
+                onClick=${() => navigate(`/s/${s.id}`)}>${s.surname} ${s.name}</button></td>
               <td>${formatGrade(r[1].grade)}</td>
               <td>${formatGrade(r[2].grade)}</td>
               <td>${formatGrade(r.annual.termsAvg)}</td>
@@ -281,42 +369,6 @@ function AssessmentDialog({ t, students, assessment, onClose }) {
         <span class="grow"></span>
         <button class="btn primary" onClick=${finish}>Τέλος</button>
       </div>
-    <//>`;
-}
-
-/** Ανάλυση βαθμού ενός μαθητή στο τετράμηνο. */
-function StudentDialog({ t, student, term, result, onClose }) {
-  const data = useStore(store.subscribe, store.getData);
-  const settings = store.gradingSettings();
-  const index = indexGrades(data);
-  const assessments = assessmentsOf(data, t.id, term, settings.term1EndMonthDay);
-  const weights = t.weights ?? DEFAULT_WEIGHTS;
-  return html`
-    <${Dialog} title=${`${student.surname} ${student.name}`} onClose=${onClose}>
-      <p class="muted" style="margin:0">${t.subject} · ${term === 1 ? 'Α΄' : 'Β΄'} τετράμηνο</p>
-      <table class="grades compact">
-        <tbody>
-          ${CRITERIA.filter((c) => (weights[c.key] ?? 0) > 0).map((c) => html`
-            <tr><td class="name">${c.label}</td><td>${formatGrade(result.values[c.key])}</td></tr>`)}
-          <tr><td class="name"><b>Βαθμός τετραμήνου</b></td><td><b>${formatGrade(result.grade)}</b></td></tr>
-        </tbody>
-      </table>
-      ${assessments.length > 0 && html`
-        <ul class="history-list">
-          ${assessments.map((a) => {
-            const m = index.marks.get(markId(a.id, student.id));
-            return html`
-              <li key=${a.id}>
-                <div class="body">
-                  <div class="meta">${KINDS[a.kind].label} · ${formatDate(a.date)}${a.title ? ` · ${a.title}` : ''}</div>
-                  <div class="text">
-                    ${formatGrade(m?.grade)}${m?.status ? ` · ${HOMEWORK_STATUS[m.status].label}` : ''}
-                  </div>
-                </div>
-              </li>`;
-          })}
-        </ul>`}
-      <div class="row end"><button class="btn primary" onClick=${onClose}>Κλείσιμο</button></div>
     <//>`;
 }
 
