@@ -7,6 +7,7 @@ import { ConfirmDialog, Menu, SyncBadge, TeachingDialog, TextDialog } from './co
 import { navigate } from '../router.js';
 import { StudentsDialog } from './StudentsUI.js';
 import { InstallBanner } from './HelpView.js';
+import { APP_CREDIT } from '../config.js';
 import { studentsOf } from '../grading.js';
 
 export function HomeView({ data, classId }) {
@@ -47,6 +48,7 @@ export function HomeView({ data, classId }) {
           </nav>
           ${selected && html`<${ClassSubjects} data=${data} cls=${selected} classes=${classes} setDialog=${setDialog} />`}
         </main>`}
+    <footer class="credit">${APP_CREDIT}</footer>
     ${dialog}`;
 }
 

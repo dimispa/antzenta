@@ -1,6 +1,6 @@
 // Οδηγίες: εγκατάσταση ανά συσκευή, πρώτα βήματα, συχνές ερωτήσεις.
 import { html, useEffect, useState } from '../vendor/preact-htm.js';
-import { APP_VERSION } from '../config.js';
+import { APP_CREDIT, APP_VERSION } from '../config.js';
 import { detectDevice, getInstallState, onInstallChange, promptInstall } from '../install.js';
 import { Icon } from './icons.js';
 import { toast, useStore } from './common.js';
@@ -14,8 +14,13 @@ export function HelpView() {
   const device = detectDevice();
   const [platform, setPlatform] = useState(device.platform);
   const install = useStore(onInstallChange, getInstallState);
+  // #/help/share → κατευθείαν στην ενότητα «Κοινοποίηση» (το ίδιο για install, start, daily, faq)
+  // Μετά το «πήγαινε στην κορυφή» της αλλαγής σελίδας (main.js), αλλιώς θα το ακύρωνε.
   useEffect(() => {
-    if (location.hash.includes('start')) document.getElementById('start')?.scrollIntoView();
+    const anchor = location.hash.split('/')[2];
+    if (!anchor) return undefined;
+    const id = setTimeout(() => document.getElementById(anchor)?.scrollIntoView(), 50);
+    return () => clearTimeout(id);
   }, []);
 
   return html`
@@ -29,6 +34,7 @@ export function HelpView() {
         <a href="#/help" onClick=${(e) => { e.preventDefault(); document.getElementById('start').scrollIntoView({ behavior: 'smooth' }); }}>2. Πρώτα βήματα</a>
         <a href="#/help" onClick=${(e) => { e.preventDefault(); document.getElementById('daily').scrollIntoView({ behavior: 'smooth' }); }}>3. Καθημερινή χρήση</a>
         <a href="#/help" onClick=${(e) => { e.preventDefault(); document.getElementById('faq').scrollIntoView({ behavior: 'smooth' }); }}>4. Συχνές ερωτήσεις</a>
+        <a href="#/help" onClick=${(e) => { e.preventDefault(); document.getElementById('share').scrollIntoView({ behavior: 'smooth' }); }}>5. Κοινοποίηση σε συνάδελφο</a>
       </nav>
 
       <section class="panel" id="install">
@@ -153,8 +159,58 @@ export function HelpView() {
           <p>Ρυθμίσεις → <i>Νέα σύνδεση</i> ή <i>Συγχρονισμός τώρα</i>. Αν επιμένει, στείλτε στιγμιότυπο με το μήνυμα.</p></details>
       </section>
 
-      <p class="muted" style="text-align:center;font-size:.85rem">Ατζέντα Εκπαιδευτικού · έκδοση ${APP_VERSION}</p>
+      <${SharePanel} />
+
+      <p class="muted app-footer">Ατζέντα Εκπαιδευτικού · έκδοση ${APP_VERSION}<br />${APP_CREDIT}</p>
     </main>`;
+}
+
+const SHARE_TEXT =
+  'Ατζέντα Εκπαιδευτικού: προγραμματισμός μαθημάτων, βαθμολόγιο και υλικό από το OneDrive — σε κινητό, tablet και υπολογιστή, '
+  + 'και χωρίς διαδίκτυο. Δωρεάν. Ανοίξτε τον σύνδεσμο και δείτε τις «Οδηγίες» (εικονίδιο ?) για εγκατάσταση. '
+  + 'Τα δεδομένα σας μένουν μόνο στις δικές σας συσκευές και στο δικό σας OneDrive.\n'
+  + `${APP_CREDIT}`;
+
+/** Κοινοποίηση της εφαρμογής: μενού κοινοποίησης της συσκευής (Viber, email…), αντιγραφή, QR code. */
+function SharePanel() {
+  const canShare = typeof navigator.share === 'function';
+  const share = async () => {
+    try {
+      await navigator.share({ title: 'Ατζέντα Εκπαιδευτικού', text: SHARE_TEXT, url: APP_URL });
+    } catch (e) {
+      if (e.name !== 'AbortError') toast('Η κοινοποίηση δεν ολοκληρώθηκε.');
+    }
+  };
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(`${SHARE_TEXT}\n${APP_URL}`);
+      toast('Αντιγράφηκε. Επικολλήστε το σε email, Viber, Messenger…');
+    } catch {
+      toast(`Αντιγράψτε τη διεύθυνση: ${APP_URL}`);
+    }
+  };
+  const email = `mailto:?subject=${encodeURIComponent('Ατζέντα Εκπαιδευτικού')}&body=${encodeURIComponent(`${SHARE_TEXT}\n\n${APP_URL}`)}`;
+  return html`
+    <section class="panel" id="share">
+      <h2>5. Κοινοποίηση σε συνάδελφο</h2>
+      <p>Στείλτε τον σύνδεσμο ή δείξτε το QR code στον συνάδελφο. Ο καθένας έχει τα <b>δικά του, χωριστά</b> δεδομένα —
+        κανείς δεν βλέπει τους μαθητές ή τους βαθμούς άλλου.</p>
+      <div class="share-box">
+        <figure class="qr">
+          <img src="icons/qr-app.svg" width="200" height="200" alt=${`QR code για ${APP_URL}`} />
+          <figcaption>Σκανάρετε με την κάμερα του κινητού</figcaption>
+        </figure>
+        <div class="share-actions">
+          <code class="copy">${APP_URL}</code>
+          ${canShare && html`<button class="btn primary" onClick=${share}><${Icon} name="iosShare" /> Κοινοποίηση (Viber, email…)</button>`}
+          <button class="btn" onClick=${copy}><${Icon} name="addBox" /> Αντιγραφή συνδέσμου και κειμένου</button>
+          <a class="btn" href=${email}><${Icon} name="external" /> Αποστολή με email</a>
+        </div>
+      </div>
+      <p class="muted" style="font-size:.85rem">Ο συνάδελφος συνδέεται στο OneDrive με τον <b>δικό του</b> λογαριασμό Microsoft.
+        Την πρώτη φορά η Microsoft μπορεί να γράψει «μη επαληθευμένος εκδότης» — είναι αναμενόμενο· πατά «Αποδοχή».
+        Με σχολικό λογαριασμό (sch.gr) ίσως χρειαστεί έγκριση διαχειριστή.</p>
+    </section>`;
 }
 
 /** Μήνυμα στην αρχική όσο η εφαρμογή δεν είναι εγκατεστημένη (κλείνει μόνιμα). */

@@ -396,3 +396,15 @@ ol.steps li { padding-left: 4px; }
 .notice.done-note { background: var(--done-soft); color: var(--done); }
 .install-banner { display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 16px; background: var(--primary-soft); color: var(--primary); border-bottom: 1px solid var(--border); font-size: .9rem; }
 .install-banner > svg { flex: none; }
+
+/* ---- Κοινοποίηση ---- */
+.share-box { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+.qr { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px; background: #fff; border-radius: 14px; border: 1px solid var(--border); }
+.qr img { display: block; width: 200px; height: 200px; image-rendering: pixelated; }
+.qr figcaption { font-size: .8rem; color: #5c6475; }
+.share-actions { flex: 1 1 240px; display: flex; flex-direction: column; gap: 8px; }
+.share-actions .btn { justify-content: flex-start; text-decoration: none; }
+
+/* ---- Ένδειξη δημιουργού ---- */
+.app-footer { text-align: center; font-size: .85rem; line-height: 1.6; }
+footer.credit { padding: 10px 16px calc(10px + var(--safe-bottom)); text-align: center; font-size: .78rem; color: var(--muted); border-top: 1px solid var(--border); background: var(--surface); }

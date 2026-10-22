@@ -1,6 +1,6 @@
 // Service worker: κρατά όλα τα αρχεία της εφαρμογής στη συσκευή ώστε να ανοίγει χωρίς διαδίκτυο.
 // Σε κάθε νέα έκδοση αλλάζει το VERSION· η εφαρμογή προτείνει «Ανανέωση».
-const VERSION = 'atzenta-v1.0.9';
+const VERSION = 'atzenta-v1.0.10';
 
 const FILES = [
   './',
@@ -12,6 +12,7 @@ const FILES = [
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
   './icons/apple-touch-icon.png',
+  './icons/qr-app.svg',
   './js/main.js',
   './js/config.js',
   './js/model.js',

@@ -3,7 +3,7 @@ import { html, useRef, useState } from '../vendor/preact-htm.js';
 import * as onedrive from '../onedrive.js';
 import * as sync from '../sync.js';
 import * as store from '../store.js';
-import { APP_VERSION, CLIENT_ID } from '../config.js';
+import { APP_CREDIT, APP_VERSION, CLIENT_ID } from '../config.js';
 import { COLLECTIONS, alive, emptyData, mergeData } from '../model.js';
 import { Icon } from './icons.js';
 import { toast, useStore } from './common.js';
@@ -28,7 +28,7 @@ export function SettingsView({ data }) {
       <${StudentsPanel} data=${data} />
       <${BackupPanel} data=${data} />
       <${InstallPanel} />
-      <p class="muted" style="text-align:center;font-size:.85rem">Ατζέντα Εκπαιδευτικού · έκδοση ${APP_VERSION}</p>
+      <p class="muted app-footer">Ατζέντα Εκπαιδευτικού · έκδοση ${APP_VERSION}<br />${APP_CREDIT}</p>
     </main>`;
 }
 
@@ -153,6 +153,9 @@ function InstallPanel() {
     <section class="panel">
       <h2>Εγκατάσταση και οδηγίες</h2>
       <p class="muted">Βήματα εγκατάστασης για iPhone, iPad, Android και υπολογιστή, πρώτα βήματα και συχνές ερωτήσεις.</p>
-      <div class="row"><button class="btn primary" onClick=${() => navigate('/help')}><${Icon} name="help" /> Οδηγίες</button></div>
+      <div class="row">
+        <button class="btn primary" onClick=${() => navigate('/help')}><${Icon} name="help" /> Οδηγίες</button>
+        <button class="btn" onClick=${() => navigate('/help/share')}><${Icon} name="iosShare" /> Κοινοποίηση σε συνάδελφο</button>
+      </div>
     </section>`;
 }
