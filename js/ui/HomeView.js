@@ -6,6 +6,7 @@ import { Icon } from './icons.js';
 import { ConfirmDialog, Menu, SyncBadge, TeachingDialog, TextDialog } from './common.js';
 import { navigate } from '../router.js';
 import { StudentsDialog } from './StudentsUI.js';
+import { InstallBanner } from './HelpView.js';
 import { studentsOf } from '../grading.js';
 
 export function HomeView({ data, classId }) {
@@ -21,10 +22,14 @@ export function HomeView({ data, classId }) {
     <header class="topbar">
       <h1>Ατζέντα Εκπαιδευτικού</h1>
       <${SyncBadge} onClick=${() => navigate('/settings')} />
+      <button class="icon-btn" title="Οδηγίες" aria-label="Οδηγίες" onClick=${() => navigate('/help')}>
+        <${Icon} name="help" />
+      </button>
       <button class="icon-btn" title="Ρυθμίσεις" aria-label="Ρυθμίσεις" onClick=${() => navigate('/settings')}>
         <${Icon} name="settings" />
       </button>
     </header>
+    <${InstallBanner} />
     ${classes.length === 0
       ? html`<${Welcome} onAdd=${addClass} />`
       : html`

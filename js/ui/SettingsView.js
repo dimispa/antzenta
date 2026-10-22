@@ -7,7 +7,7 @@ import { APP_VERSION, CLIENT_ID } from '../config.js';
 import { COLLECTIONS, alive, emptyData, mergeData } from '../model.js';
 import { Icon } from './icons.js';
 import { toast, useStore } from './common.js';
-import { back } from '../router.js';
+import { back, navigate } from '../router.js';
 import { StudentsPanel } from './StudentsUI.js';
 
 const CLIENT_ID_KEY = 'atzenta.clientId';
@@ -151,10 +151,8 @@ function BackupPanel({ data }) {
 function InstallPanel() {
   return html`
     <section class="panel">
-      <h2>Εγκατάσταση στη συσκευή</h2>
-      <p><b>iPhone / iPad:</b> ανοίξτε την εφαρμογή στο Safari → κουμπί «Κοινοποίηση» → <i>Προσθήκη στην οθόνη Αφετηρίας</i>.</p>
-      <p><b>Android:</b> ανοίξτε την εφαρμογή στο Chrome → μενού ⋮ → <i>Εγκατάσταση εφαρμογής</i>${' '}
-        (ή <i>Προσθήκη στην αρχική οθόνη</i>).</p>
-      <p class="muted">Μετά την πρώτη φόρτωση η εφαρμογή ανοίγει και χωρίς διαδίκτυο.</p>
+      <h2>Εγκατάσταση και οδηγίες</h2>
+      <p class="muted">Βήματα εγκατάστασης για iPhone, iPad, Android και υπολογιστή, πρώτα βήματα και συχνές ερωτήσεις.</p>
+      <div class="row"><button class="btn primary" onClick=${() => navigate('/help')}><${Icon} name="help" /> Οδηγίες</button></div>
     </section>`;
 }

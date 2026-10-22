@@ -32,7 +32,7 @@
 python tools/serve.py
 ```
 
-Ανοίξτε το http://localhost:8765. Τα tests είναι στα `/tests/index.html` (πυρήνας) και `/tests/sync.html` (συγχρονισμός).
+Ανοίξτε το http://localhost:8765. Οδηγίες χρήσης και εγκατάστασης: μέσα στην εφαρμογή (εικονίδιο «?», `#/help`). Τα tests είναι στα `/tests/index.html` (πυρήνας) και `/tests/sync.html` (συγχρονισμός).
 
 ## Νέα έκδοση
 

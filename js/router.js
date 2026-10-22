@@ -1,4 +1,4 @@
-// Πλοήγηση με #hash: #/ (αρχική), #/c/<τμήμα>, #/t/<μάθημα>[/grades], #/s/<μαθητής>, #/settings
+// Πλοήγηση με #hash: #/ (αρχική), #/c/<τμήμα>, #/t/<μάθημα>[/grades], #/s/<μαθητής>, #/settings, #/help
 const listeners = new Set();
 
 export function currentRoute() {
@@ -8,6 +8,7 @@ export function currentRoute() {
   if (parts[0] === 't') return { name: 'lesson', teachingId: parts[1], tab: parts[2] === 'grades' ? 'grades' : 'lesson' };
   if (parts[0] === 's') return { name: 'student', studentId: parts[1] };
   if (parts[0] === 'settings') return { name: 'settings' };
+  if (parts[0] === 'help') return { name: 'help' };
   return { name: 'home' };
 }
 

@@ -1,4 +1,5 @@
 // Εκκίνηση: τοπικά δεδομένα → οθόνη αμέσως· OneDrive και συγχρονισμός στο παρασκήνιο.
+import './install.js'; // πρώτο: «πιάνει» νωρίς τη δυνατότητα εγκατάστασης του browser
 import { html, render, useEffect, useState } from './vendor/preact-htm.js';
 import * as store from './store.js';
 import * as onedrive from './onedrive.js';
@@ -10,6 +11,7 @@ import { HomeView } from './ui/HomeView.js';
 import { LessonView } from './ui/LessonView.js';
 import { SettingsView, clientId } from './ui/SettingsView.js';
 import { StudentView } from './ui/StudentView.js';
+import { HelpView } from './ui/HelpView.js';
 
 function App() {
   const [data, setData] = useState(store.getData());
@@ -21,6 +23,7 @@ function App() {
   let view;
   if (route.name === 'lesson') view = html`<${LessonView} data=${data} teachingId=${route.teachingId} tab=${route.tab} />`;
   else if (route.name === 'settings') view = html`<${SettingsView} data=${data} />`;
+  else if (route.name === 'help') view = html`<${HelpView} />`;
   else if (route.name === 'student') view = html`<${StudentView} data=${data} studentId=${route.studentId} />`;
   else view = html`<${HomeView} data=${data} classId=${route.classId} />`;
 
